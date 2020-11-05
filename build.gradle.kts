@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.3.61"
+    kotlin("jvm") version "1.4.0"
 }
 
 group = "de.muellerml"
@@ -12,8 +12,8 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("io.ktor:ktor-client-cio:1.3.0")
-    implementation("io.ktor:ktor-client-logging-jvm:1.3.0")
+    implementation("io.ktor:ktor-client-cio:1.4.0")
+    implementation("io.ktor:ktor-client-logging-jvm:1.4.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.1")
 
     implementation("org.jsoup:jsoup:1.12.1")
