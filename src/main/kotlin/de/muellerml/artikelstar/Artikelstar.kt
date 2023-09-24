@@ -69,7 +69,7 @@ data class Username internal constructor(val username: String, internal val buil
 }
 
 
-data class Credentials(val username: String, val password: String, val url: String = "https://lm-as-prod-backend-as.azurewebsites.net", val cityId: String = "91f42d33-97ff-48a0-8b54-9bddc1ebcd76", val category: String = "b568f407-801e-4da6-9a21-a5267716d669")
+data class Credentials(val username: String, val password: String, val url: String = "https://artikelstar.nb-data.io", val cityId: String = "91f42d33-97ff-48a0-8b54-9bddc1ebcd76", val category: String = "b568f407-801e-4da6-9a21-a5267716d669")
 
 class ArtikelstarTextPlainConverter(private val parent: KotlinxSerializationConverter) : ContentConverter {
     override suspend fun deserialize(charset: Charset, typeInfo: TypeInfo, content: ByteReadChannel): Any? {
