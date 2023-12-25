@@ -35,8 +35,13 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
 
     private fun login(credentials: Credentials): String = runBlocking {
         val result =
-            httpClient.get(urlString = "${credentials.url}/login/login?username=${credentials.username}&password=${credentials.password}") {
-                accept(ContentType.Any)
+            httpClient.post(urlString = "${credentials.url}/login/login") {
+                setBody(mapOf(
+                    "username" to credentials.username,
+                    "password" to credentials.password,
+                ))
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Application.Json)
             }
         val response = result.body<LoginResponse>()
         if (!response.success) {
