@@ -73,11 +73,13 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
         @Serializable
         data class SaveArticlePicture(
             val authorAlias: String,
+            val authorTitle: String = authorAlias,
             val newsId: String,
             val id: String,
             val filename: String,
             val fileSize: Int,
             val caption: String,
+            val captionTitle: String = caption,
         ) {
 
             val layoutSize: Int = 2
@@ -164,6 +166,8 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
         val issueId = retrieveNextIssue(LocalDate.now(ZoneOffset.UTC)
             .with(TemporalAdjusters.next(DayOfWeek.TUESDAY)))
 
+        println(article.pictures)
+
         val uploadedPictures = article.pictures.map { picture -> uploadPicture(article, picture) }
 
         val response = saveArticle(article, issueId, uploadedPictures)
@@ -207,7 +211,7 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
                     )
                 },
                 title = article.title,
-                text = article.text,
+                text = article.text.replace("[\\t\\n\\r]+".toRegex(),"</p><p>"),
                 publishingObjectId = credentials.cityId
             ),
             placements = listOf(
@@ -218,6 +222,8 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
                 )
             )
         )
+
+        println(requestBody)
 
         val response = httpClient.post("${credentials.url}/article/saveAndPlaceArticle") {
             header("Authorization", "Bearer $token")
@@ -237,10 +243,11 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
             append("isMaster", "true")
             append("file", picture.bytes, Headers.build {
                 append(HttpHeaders.ContentType, picture.contentType.toString())
-                append(HttpHeaders.ContentDisposition, "filename=\"${picture.filename}\"")
+                append(HttpHeaders.ContentDisposition, "filename=\"1.JPG\"")
             })
             append("imageLayoutSize", 2)
         }
+        println(picture)
         val result = httpClient.submitFormWithBinaryData(
             "${credentials.url}/article/uploadImage",
             parameters
