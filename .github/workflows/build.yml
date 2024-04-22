@@ -1,0 +1,36 @@
+
+# This workflow will build a Java project with Gradle
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+
+name: Build webserver
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request: {}
+
+env:
+  isCi: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '11'
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Build & Test
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: :build
+          cache-read-only: false
+      #      - name: E2E Test
+      #        run:  ./gradlew :e2e-test:test
