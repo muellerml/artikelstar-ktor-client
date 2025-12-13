@@ -3,10 +3,6 @@ package de.muellerml.artikelstar
 import de.muellerml.artikelstar.article.Article
 import de.muellerml.artikelstar.article.ArticleDto
 import de.muellerml.artikelstar.article.ArtikelSender
-import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
-import java.nio.file.Files
-import java.nio.file.Paths
 
 @DslMarker
 annotation class ArtikelstarDsl
