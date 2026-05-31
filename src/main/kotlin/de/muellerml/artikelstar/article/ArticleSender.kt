@@ -9,21 +9,24 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.temporal.TemporalAdjusters
-import java.time.temporal.WeekFields
-import java.util.*
+import java.time.LocalDateTime
 
 @Serializable
 data class LoginResponse(
-    val success: Boolean,
-    val token: Token,
+    val data: LoginData,
 ) {
     @Serializable
-    data class Token(
+    data class LoginData(
+        val token: Tokens,
+    )
+
+    @Serializable
+    data class Tokens(
+        val print: PrintToken,
+    )
+
+    @Serializable
+    data class PrintToken(
         val token: String,
     )
 }
@@ -34,21 +37,15 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
 
 
     private fun login(credentials: Credentials): String = runBlocking {
-        val result =
-            httpClient.post(urlString = "${credentials.url}/login/login") {
-                setBody(mapOf(
-                    "username" to credentials.username,
-                    "password" to credentials.password,
-                ))
-                contentType(ContentType.Application.Json)
-                accept(ContentType.Application.Json)
-            }
-        val response = result.body<LoginResponse>()
-        if (!response.success) {
-            error("Login failed with response: $result")
-        } else {
-            response.token.token
+        val result = httpClient.post(urlString = "${credentials.authUrl}/admin-proxy/login") {
+            setBody(mapOf(
+                "username" to credentials.username,
+                "password" to credentials.password,
+            ))
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
         }
+        result.body<LoginResponse>().data.token.print.token
     }
 
     @Serializable
@@ -72,31 +69,50 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
         @Suppress("unused")
         @Serializable
         data class SaveArticlePicture(
-            val authorAlias: String,
-            val authorTitle: String = authorAlias,
-            val newsId: String,
             val id: String,
+            val newsId: String,
             val filename: String,
+            val name: String,
+            val originalFileName: String,
             val fileSize: Int,
+            val authorAlias: String,
+            val authorTitle: String,
             val caption: String,
-            val captionTitle: String = caption,
+            val captionTitle: String,
+            val alternative: String,
+            val layoutSize: Int,
+            val displayOrder: Int,
+            val mediatype: Int,
+            val createdOn: String,
+            val modifiedOn: String,
+            val width: Int,
+            val height: Int,
+            val url: String,
+            val downloadUrl: String,
+            val fileSize2: Int = fileSize,
+            val _isNew: Boolean = true,
         ) {
-
-            val layoutSize: Int = 2
-            val name: String = filename
-            val createdOn = Instant.now().toString()
-            val modifiedOn = Instant.now().toString()
-            val displayOrder = 0
-            val mediatype = 0
-            val originalFileName = filename
-
-            constructor(uploadedImage: UploadedImage, authorAlias: String, caption: String) : this(
-                authorAlias = authorAlias,
-                newsId = uploadedImage.newsId,
+            constructor(uploadedImage: UploadedImage, authorAlias: String, caption: String, alternative: String = caption) : this(
                 id = uploadedImage.id,
+                newsId = uploadedImage.newsId,
                 filename = uploadedImage.filename,
+                name = uploadedImage.filename,
+                originalFileName = uploadedImage.originalFileName,
                 fileSize = uploadedImage.fileSize,
+                authorAlias = authorAlias,
+                authorTitle = authorAlias,
                 caption = caption,
+                captionTitle = caption,
+                alternative = alternative,
+                layoutSize = uploadedImage.layoutSize,
+                displayOrder = uploadedImage.displayOrder,
+                mediatype = uploadedImage.mediatype,
+                createdOn = uploadedImage.createdOn,
+                modifiedOn = uploadedImage.modifiedOn,
+                width = uploadedImage.width,
+                height = uploadedImage.height,
+                url = uploadedImage.url,
+                downloadUrl = uploadedImage.downloadUrl,
             )
         }
 
@@ -124,15 +140,16 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
     ) {
         @Serializable
         data class IssuesResponseData(
-            val weeknumbersForDropdown: List<Issue>
+            val issues: List<Issue>
         )
 
         @Serializable
         data class Issue(
             val year: Int,
-            val week: Int,
+            val weekNumber: Int,
             val id: String,
             val name: String,
+            val authorDeadline: String,
         )
     }
 
@@ -146,25 +163,22 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
         val id: String,
         val newsId: String,
         val filename: String,
+        val originalFileName: String,
         val fileSize: Int,
+        val layoutSize: Int,
+        val displayOrder: Int,
+        val mediatype: Int,
+        val createdOn: String,
+        val modifiedOn: String,
+        val width: Int,
+        val height: Int,
+        val url: String,
+        val downloadUrl: String,
     )
 
 
-    data class IssueDate(private var localDate: LocalDate) {
-        private val weekFields: WeekFields = WeekFields.of(Locale.getDefault())
-        val weekOfYear
-            get() = localDate.get(weekFields.weekOfWeekBasedYear())
-        val year
-            get() = localDate.year
-
-        fun increment() {
-            localDate = localDate.with(TemporalAdjusters.ofDateAdjuster { it.plusDays(7) })
-        }
-    }
-
     suspend fun send(article: Article): ArticleDto = runCatching {
-        val issueId = retrieveNextIssue(LocalDate.now(ZoneOffset.UTC)
-            .with(TemporalAdjusters.next(DayOfWeek.TUESDAY)))
+        val issueId = retrieveNextIssue()
 
         println(article.pictures)
 
@@ -177,20 +191,16 @@ class ArtikelSender internal constructor(private val httpClient: HttpClient, pri
         .onFailure { delete(ArticleDto(article.id)) }
         .getOrThrow()
 
-    private suspend fun retrieveNextIssue(localDate: LocalDate): String {
-        val nextIssue = IssueDate(localDate)
-        var issueId: String?
-        do {
-            val issuesResponse =
-                httpClient.get("${credentials.url}/article/search?year=${nextIssue.year}") {
-                    header("Authorization", "Bearer $token")
-                }
-            issueId = issuesResponse.body<IssuesResponse>().data.weeknumbersForDropdown.firstOrNull {
-                it.year == nextIssue.year && it.week == nextIssue.weekOfYear
-            }?.id
-            nextIssue.increment()
-        } while (issueId == null)
-        return issueId
+    private suspend fun retrieveNextIssue(): String {
+        val issuesResponse = httpClient.get("${credentials.url}/article/getIssuesForCity?cityId=${credentials.cityId}") {
+            header("Authorization", "Bearer $token")
+        }
+        val now = LocalDateTime.now()
+        return issuesResponse.body<IssuesResponse>().data.issues
+            .filter { LocalDateTime.parse(it.authorDeadline) > now }
+            .minByOrNull { it.authorDeadline }
+            ?.id
+            ?: error("No issue with open author deadline found")
     }
 
     private suspend fun saveArticle(
