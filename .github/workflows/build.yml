@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '11'
+          java-version: '21'
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -32,5 +32,3 @@ jobs:
         with:
           arguments: :build
           cache-read-only: false
-      #      - name: E2E Test
-      #        run:  ./gradlew :e2e-test:test

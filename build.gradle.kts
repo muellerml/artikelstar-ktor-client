@@ -1,6 +1,8 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     kotlin("jvm")
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.7.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.0"
 }
 
 group = "de.muellerml"
@@ -21,11 +23,16 @@ dependencies {
     implementation("org.jsoup:jsoup:1.15.3")
 }
 
+
 tasks {
     compileKotlin {
-        kotlinOptions.jvmTarget = "11"
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_21
+        }
     }
     compileTestKotlin {
-        kotlinOptions.jvmTarget = "11"
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_21
+        }
     }
 }
