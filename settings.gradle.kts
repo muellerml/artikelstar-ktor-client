@@ -1,7 +1,7 @@
 rootProject.name = "artikelstar-ktor-client"
 
 pluginManagement {
-    val kotlinVersion: String by settings
+    val kotlinVersion = providers.gradleProperty("kotlinVersion").get()
     plugins {
         kotlin("plugin.jpa") version kotlinVersion
         kotlin("jvm") version kotlinVersion
